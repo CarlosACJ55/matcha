@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const maxHandleTime = time.Second
+const maxHandleTime = 5 * time.Second
 
 func withRequestLogs(handler http.Handler) http.Handler {
 	return http.HandlerFunc(

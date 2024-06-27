@@ -16,19 +16,20 @@ import (
 )
 
 var (
-	//go:embed internal/templates/*.go.html
-	templates    embed.FS
-	tmpl         = template.Must(template.ParseFS(templates, "internal/templates/*.go.html"))
-	publicServer = http.StripPrefix("/public", http.FileServer(http.Dir("public")))
-	surfacePages = map[string]struct{}{"signup": {}, "login": {}}
+	//go:embed internal/templates/*.go.html all:public
+	content        embed.FS
+	publicServer   = http.FileServer(http.FS(content))
+	templateServer = template.Must(template.ParseFS(content, "internal/templates/*.go.html"))
+	surfacePages   = map[string]struct{}{"signup": {}, "login": {}}
 )
 
 func servePublicFile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "max-age=3600")
 	publicServer.ServeHTTP(w, r)
 }
 
 func loadIndex(w http.ResponseWriter, _ *http.Request) {
-	err := tmpl.ExecuteTemplate(w, "index.go.html", nil)
+	err := templateServer.ExecuteTemplate(w, "index.go.html", nil)
 	if err != nil {
 		log.Println("Error executing template index.go.html -", err)
 	}
@@ -159,7 +160,7 @@ func loadPage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusOK)
-	err := tmpl.ExecuteTemplate(w, page+".go.html", user)
+	err := templateServer.ExecuteTemplate(w, page+".go.html", user)
 	if err != nil {
 		log.Println("Error executing template", page, "-", err)
 	}
