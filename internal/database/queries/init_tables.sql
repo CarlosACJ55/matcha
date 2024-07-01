@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users
     username   VARCHAR(255)        NOT NULL UNIQUE,
     email      VARCHAR(255)        NOT NULL UNIQUE,
     password   VARCHAR(255)        NOT NULL,
-#     TODO(@speoyoungcho213): Add not null to created_on
+#     TODO(@seoyoungcho213): Add not null to created_on
     created_on timestamp DEFAULT NOW()
 );
 

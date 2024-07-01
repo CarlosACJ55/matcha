@@ -24,7 +24,6 @@ use it._
 ### Documentation Changes
 - [ ] 📜 README.md
 - [ ] 💬 Added **necessary** comments to existing code
-- [ ] 📕 storybook
 - [ ] 🙅 no documentation needed
 
 ## Issues and Bugs
