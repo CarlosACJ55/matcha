@@ -23,12 +23,12 @@ var (
 	surfacePages   = map[string]struct{}{"signup": {}, "login": {}}
 )
 
-func servePublicFile(w http.ResponseWriter, r *http.Request) {
+func getPublic(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "max-age=3600")
 	publicServer.ServeHTTP(w, r)
 }
 
-func loadIndex(w http.ResponseWriter, _ *http.Request) {
+func getIndex(w http.ResponseWriter, _ *http.Request) {
 	err := templateServer.ExecuteTemplate(w, "index.go.html", nil)
 	if err != nil {
 		log.Println("Error executing template index.go.html -", err)
@@ -50,7 +50,7 @@ func setSessionCookie(w http.ResponseWriter, id int) {
 	)
 }
 
-func signupSubmit(w http.ResponseWriter, r *http.Request) {
+func postSignup(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	// TODO(@seoyoungcho213): Validate user data way better here.
 	if username == "" {
@@ -89,7 +89,12 @@ func signupSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("HX-Redirect", "/dashboard")
 }
 
-func loginSubmit(w http.ResponseWriter, r *http.Request) {
+func postLogout(w http.ResponseWriter, _ *http.Request) {
+	setSessionCookie(w, 0)
+	w.Header().Set("HX-Redirect", "/")
+}
+
+func postLogin(w http.ResponseWriter, r *http.Request) {
 	// TODO(@FaaizMemonPurdue): Add API call timeouts.
 	id, err := matcha.database.AuthenticateLogin(r.FormValue("username"), r.FormValue("password"))
 	if err != nil {
@@ -103,15 +108,13 @@ func loginSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("HX-Redirect", "/dashboard")
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-
+func postDeleteUser(w http.ResponseWriter, r *http.Request) {
 	// TODO(@FaaizMemonPurdue): Add API call timeouts.
+	username := r.FormValue("username")
 	id, err := matcha.database.AuthenticateLogin(username, r.FormValue("password"))
 	if err != nil {
 		log.Println("User failed to validate delete request -", err)
-		// TODO(@seoyoungcho213): Log the user out and immediately invalidate their cookie.
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		postLogout(w, r)
 		return
 	}
 
@@ -119,10 +122,12 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	err = matcha.database.DeleteUser(id)
 	if err != nil {
 		log.Println("Delete User failed -", err)
-		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+		if _, err = io.WriteString(w, "internal server error"); err != nil {
+			log.Println("Error writing deleted user internal server error -", err)
+			return
+		}
 	}
-
-	// TODO(@seoyoungcho213) : Remove user id cookie
+	postLogout(w, r)
 }
 
 func checkLoginStatus(w http.ResponseWriter, r *http.Request) (user *internal.User) {
@@ -150,7 +155,7 @@ func checkLoginStatus(w http.ResponseWriter, r *http.Request) (user *internal.Us
 	return matcha.database.GetUser(id)
 }
 
-func loadPage(w http.ResponseWriter, r *http.Request) {
+func getPage(w http.ResponseWriter, r *http.Request) {
 	page := strings.TrimLeft(r.URL.Path, "/")
 	var user *internal.User
 	if _, exists := surfacePages[page]; !exists {
@@ -159,9 +164,7 @@ func loadPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	w.WriteHeader(http.StatusOK)
-	err := templateServer.ExecuteTemplate(w, page+".go.html", user)
-	if err != nil {
+	if err := templateServer.ExecuteTemplate(w, page+".go.html", user); err != nil {
 		log.Println("Error executing template", page, "-", err)
 	}
 }

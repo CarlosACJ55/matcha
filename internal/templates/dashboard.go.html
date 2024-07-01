@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2024 Andrea Goh. -->
+<!-- Copyright (c) 2024 Andrea Goh and Seoyoung Cho. -->
 
 {{ template "title" }}Dashboard{{ template "end_title" }}
 <body>
@@ -10,6 +10,11 @@
         <i class="fa fa-gear"></i>
     </a>
 </div>
+
+<div>
+    <button hx-post="/logout" class="btn">Log out</button>
+</div>
+
 {{ . }}
 </body>
 {{ template "footer" }}
